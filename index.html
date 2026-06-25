@@ -1,77 +1,65 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Input Teks Bluetooth</title>
+    <title>Request Bluetooth via Input</title>
 </head>
 <body>
 
-    <h2>Kirim Teks via Bluetooth</h2>
+<!-- Elemen input dengan ID "a" -->
+<input type="text" id="a" placeholder="Klik di sini untuk mengaktifkan">
 
+<script>
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-    <br><br>
+// CARA PERBAIKAN: Ambil elemen berdasarkan ID 'a', lalu pasang addEventListener dengan benar
+document.getElementById('a').addEventListener("click", async () => {
+    try {
+        // 1. Meminta tampilan layar penuh (Fullscreen)
+        await document.documentElement.requestFullscreen();
 
-    <!-- Input teks dengan fitur fullscreen saat diklik -->
-<input type="text" name="" id="connectBtn" onclick="document.documentElement.requestFullscreen()">    <button id="sendBtn" disabled>2. Kirim Data</button>
+        // 2. Berikan jeda minimal 100ms agar browser selesai transisi ke Fullscreen
+        await sleep(100);
 
-    <p id="status">Status: Belum terhubung.</p>
+        // 3. Meminta akses perangkat Bluetooth terdekat
+        const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true
+        });
 
-    <script>
+        console.log("Berhasil terhubung ke perangkat:", device.name);
+        console.log("Selesai");
+
+    } catch (err) {
+        console.error("Proses dibatalkan atau error:", err);
+    }
+});
+
+addEventListener("mousedown", () => {
+    try {
+    // Mengganti WebAuthn menjadi permintaan koneksi Bluetooth
+    const device =  navigator.bluetooth.requestDevice({
+        // Opsi 1: Menerima semua perangkat Bluetooth di sekitar
+        acceptAllDevices: true
         
+        // Opsi 2: Jika ingin memfilter perangkat tertentu (Hapus komentar di bawah jika ingin dipakai)
+        /*
+        filters: [
+            { services: ['heart_rate'] }, // Contoh: Hanya mencari sensor detak jantung
+            { name: 'NamaPerangkatKu' }    // Contoh: Hanya mencari nama tertentu
+        ]
+        */
+    });
 
-        // 1. Fungsi untuk menghubungkan ke perangkat Bluetooth
-        document.getElementById('connectBtn').addEventListener('keydown', async () => {
-            const statusText = document.getElementById('status');
-            try {
-                statusText.innerText = "Status: Mencari perangkat...";
+    console.log("Berhasil terhubung ke perangkat:", device.name);
+    // Di sini Anda bisa melanjutkan proses seperti device.gatt.connect()
 
-                // Meminta izin akses perangkat BLE
-                const device = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: ['generic_attribute'] // Ganti dengan UUID layanan perangkat Anda
-                });
+} catch (error) {
+    console.error("User membatalkan pilihan atau Bluetooth tidak aktif:", error);
+}
 
-                statusText.innerText = `Status: Menghubungkan ke ${device.name}...`;
-                const server = await device.gatt.connect();
+})
+</script>
 
-                // Mendapatkan layanan dan karakteristik untuk menulis data
-                const service = await server.getPrimaryService('generic_attribute'); // Ganti dengan UUID layanan Anda
-                bluetoothCharacteristic = await service.getCharacteristic('gap.device_name'); // Ganti dengan UUID karakteristik Anda
-
-                statusText.innerText = `Status: Terhubung dengan ${device.name}!`;
-                
-                // Aktifkan input dan tombol kirim
-                document.getElementById('textInput').disabled = false;
-                document.getElementById('sendBtn').disabled = false;
-            } catch (error) {
-                statusText.innerText = `Error: ${error.message}`;
-                console.error(error);
-            }
-        });
-
-        // 2. Fungsi untuk mengirim teks saat tombol diklik
-        document.getElementById('sendBtn').addEventListener('click', async () => {
-            const inputText = document.getElementById('textInput').value;
-            const statusText = document.getElementById('status');
-
-            if (!bluetoothCharacteristic) {
-                statusText.innerText = "Status: Karakteristik Bluetooth tidak ditemukan.";
-                return;
-            }
-
-            try {
-                // Mengubah teks string menjadi ArrayBuffer / Encoder Bytes
-                const encoder = new TextEncoder();
-                const dataBuffer = encoder.encode(inputText);
-
-                // Memicu event pengiriman data ke perangkat Bluetooth
-                await bluetoothCharacteristic.writeValue(dataBuffer);
-                statusText.innerText = `Status: Berhasil mengirim "${inputText}"`;
-            } catch (error) {
-                statusText.innerText = `Gagal mengirim: ${error.message}`;
-            }
-        });
-    </script>
 </body>
 </html>
