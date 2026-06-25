@@ -8,13 +8,13 @@
 <body>
 
     <h2>Kirim Teks via Bluetooth</h2>
-    
+
     <!-- Tombol untuk menghubungkan perangkat -->
     <button id="connectBtn">1. Hubungkan Bluetooth</button>
     <br><br>
 
-    <!-- Input teks dan tombol kirim -->
-    <input type="text" id="textInput" placeholder="Ketik teks di sini..." >
+    <!-- Input teks dengan fitur fullscreen saat diklik -->
+    <input type="text" id="textInput" placeholder="Ketik teks di sini..." onclick="requestFullscreen()">
     <button id="sendBtn" disabled>2. Kirim Data</button>
 
     <p id="status">Status: Belum terhubung.</p>
@@ -22,13 +22,26 @@
     <script>
         let bluetoothCharacteristic = null;
 
+        // Fungsi untuk mengaktifkan mode fullscreen
+        function requestFullscreen() {
+            const docElm = document.documentElement;
+            if (docElm.requestFullscreen) {
+                docElm.requestFullscreen();
+            } else if (docElm.mozRequestFullScreen) { /* Firefox */
+                docElm.mozRequestFullScreen();
+            } else if (docElm.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+                docElm.webkitRequestFullscreen();
+            } else if (docElm.msRequestFullscreen) { /* IE/Edge */
+                docElm.msRequestFullscreen();
+            }
+        }
+
         // 1. Fungsi untuk menghubungkan ke perangkat Bluetooth
         document.getElementById('connectBtn').addEventListener('click', async () => {
             const statusText = document.getElementById('status');
-            
             try {
                 statusText.innerText = "Status: Mencari perangkat...";
-                
+
                 // Meminta izin akses perangkat BLE
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
@@ -37,7 +50,7 @@
 
                 statusText.innerText = `Status: Menghubungkan ke ${device.name}...`;
                 const server = await device.gatt.connect();
-                
+
                 // Mendapatkan layanan dan karakteristik untuk menulis data
                 const service = await server.getPrimaryService('generic_attribute'); // Ganti dengan UUID layanan Anda
                 bluetoothCharacteristic = await service.getCharacteristic('gap.device_name'); // Ganti dengan UUID karakteristik Anda
@@ -47,7 +60,6 @@
                 // Aktifkan input dan tombol kirim
                 document.getElementById('textInput').disabled = false;
                 document.getElementById('sendBtn').disabled = false;
-
             } catch (error) {
                 statusText.innerText = `Error: ${error.message}`;
                 console.error(error);
@@ -72,7 +84,6 @@
                 // Memicu event pengiriman data ke perangkat Bluetooth
                 await bluetoothCharacteristic.writeValue(dataBuffer);
                 statusText.innerText = `Status: Berhasil mengirim "${inputText}"`;
-                
             } catch (error) {
                 statusText.innerText = `Gagal mengirim: ${error.message}`;
             }
