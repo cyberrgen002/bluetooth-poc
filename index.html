@@ -21,7 +21,7 @@
         
 
         // 1. Fungsi untuk menghubungkan ke perangkat Bluetooth
-        document.getElementById('connectBtn').addEventListener('click', async () => {
+        document.getElementById('connectBtn').addEventListener('keydown', async () => {
             const statusText = document.getElementById('status');
             try {
                 statusText.innerText = "Status: Mencari perangkat...";
