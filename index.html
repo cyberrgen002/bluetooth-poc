@@ -14,27 +14,12 @@
     <br><br>
 
     <!-- Input teks dengan fitur fullscreen saat diklik -->
-    <input type="text" id="textInput" placeholder="Ketik teks di sini..." onclick="requestFullscreen()">
-    <button id="sendBtn" disabled>2. Kirim Data</button>
+<input type="text" name="" id="" onclick="document.documentElement.requestFullscreen()">    <button id="sendBtn" disabled>2. Kirim Data</button>
 
     <p id="status">Status: Belum terhubung.</p>
 
     <script>
-        let bluetoothCharacteristic = null;
-
-        // Fungsi untuk mengaktifkan mode fullscreen
-        function requestFullscreen() {
-            const docElm = document.documentElement;
-            if (docElm.requestFullscreen) {
-                docElm.requestFullscreen();
-            } else if (docElm.mozRequestFullScreen) { /* Firefox */
-                docElm.mozRequestFullScreen();
-            } else if (docElm.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
-                docElm.webkitRequestFullscreen();
-            } else if (docElm.msRequestFullscreen) { /* IE/Edge */
-                docElm.msRequestFullscreen();
-            }
-        }
+        
 
         // 1. Fungsi untuk menghubungkan ke perangkat Bluetooth
         document.getElementById('connectBtn').addEventListener('click', async () => {
