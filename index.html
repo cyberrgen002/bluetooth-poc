@@ -3,96 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fix User Gesture Bluetooth</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #fff; }
-        :fullscreen { background-color: #f0f0f0; padding: 40px; }
-        input { padding: 10px; font-size: 16px; width: 250px; }
-        button { padding: 10px; font-size: 16px; }
-    </style>
+    <title>Input Teks Bluetooth</title>
 </head>
 <body>
 
-    <h2>Memicu Fullscreen & Bluetooth (Fix Gesture)</h2>
+    <h2>Kirim Teks via Bluetooth</h2>
     
-    <!-- Klik langsung pada input ini -->
-    <input type="text" id="bluetoothInput" placeholder="Klik di sini untuk mulai..." >
-    <button id="sendBtn" disabled>Kirim</button>
-    <p id="status">Status: Standby.</p>
+    <!-- Tombol untuk menghubungkan perangkat -->
+    <button id="connectBtn">1. Hubungkan Bluetooth</button>
+    <br><br>
+
+    <!-- Input teks dan tombol kirim -->
+    <input type="text" id="textInput" placeholder="Ketik teks di sini..." >
+    <button id="sendBtn" disabled>2. Kirim Data</button>
+
+    <p id="status">Status: Belum terhubung.</p>
 
     <script>
         let bluetoothCharacteristic = null;
-        const inputField = document.getElementById('bluetoothInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const statusText = document.getElementById('status');
 
-        // Fungsi terpisah untuk Bluetooth agar tetap dalam satu siklus event loop utama
-        function hubungkanBluetooth() {
-            statusText.innerText = "Status: Membuka pencarian Bluetooth...";
+        // 1. Fungsi untuk menghubungkan ke perangkat Bluetooth
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            const statusText = document.getElementById('status');
             
-            navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: ['generic_attribute'] // Sesuaikan UUID service Anda
-            })
-            .then(device => {
-                statusText.innerText = `Status: Menghubungkan ke ${device.name}...`;
-                return device.gatt.connect();
-            })
-            .then(server => {
-                return server.getPrimaryService('generic_attribute');
-            })
-            .then(service => {
-                return service.getCharacteristic('gap.device_name');
-            })
-            .then(characteristic => {
-                bluetoothCharacteristic = characteristic;
-                statusText.innerText = "Status: Terhubung! Silakan mengetik.";
+            try {
+                statusText.innerText = "Status: Mencari perangkat...";
                 
-                // Buka proteksi input
-                inputField.readOnly = false;
-                inputField.placeholder = "Ketik data di sini...";
-                inputField.focus();
-                sendBtn.disabled = false;
-            })
-            .catch(error => {
-                statusText.innerText = `Bluetooth Gagal: ${error.message}`;
-                console.error(error);
-            });
-        }
-
-        // Event listener utama pada input
-        inputField.addEventListener('click', (event) => {
-            statusText.innerText = "Status: Memproses klik...";
-
-            // 1. Jalankan Fullscreen terlebih dahulu secara sinkronous
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen()
-                .then(() => {
-                    console.log("Fullscreen berhasil.");
-                })
-                .catch(err => {
-                    console.log("Fullscreen ditolak:", err.message);
+                // Meminta izin akses perangkat BLE
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['generic_attribute'] // Ganti dengan UUID layanan perangkat Anda
                 });
-            }
 
-            // 2. Langsung panggil fungsi Bluetooth tanpa menunggu (await) proses fullscreen selesai.
-            // Ini memastikan browser tahu bahwa pemanggilan ini berasal dari klik yang sama.
-            hubungkanBluetooth();
+                statusText.innerText = `Status: Menghubungkan ke ${device.name}...`;
+                const server = await device.gatt.connect();
+                
+                // Mendapatkan layanan dan karakteristik untuk menulis data
+                const service = await server.getPrimaryService('generic_attribute'); // Ganti dengan UUID layanan Anda
+                bluetoothCharacteristic = await service.getCharacteristic('gap.device_name'); // Ganti dengan UUID karakteristik Anda
+
+                statusText.innerText = `Status: Terhubung dengan ${device.name}!`;
+                
+                // Aktifkan input dan tombol kirim
+                document.getElementById('textInput').disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+
+            } catch (error) {
+                statusText.innerText = `Error: ${error.message}`;
+                console.error(error);
+            }
         });
 
-        // Fungsi kirim data
-        sendBtn.addEventListener('click', () => {
-            if (!bluetoothCharacteristic) return;
-            const encoder = new TextEncoder();
-            const dataBuffer = encoder.encode(inputField.value);
-            
-            bluetoothCharacteristic.writeValue(dataBuffer)
-            .then(() => {
-                statusText.innerText = `Status: Terkirim "${inputField.value}"`;
-            })
-            .catch(error => {
-                statusText.innerText = `Gagal kirim: ${error.message}`;
-            });
+        // 2. Fungsi untuk mengirim teks saat tombol diklik
+        document.getElementById('sendBtn').addEventListener('click', async () => {
+            const inputText = document.getElementById('textInput').value;
+            const statusText = document.getElementById('status');
+
+            if (!bluetoothCharacteristic) {
+                statusText.innerText = "Status: Karakteristik Bluetooth tidak ditemukan.";
+                return;
+            }
+
+            try {
+                // Mengubah teks string menjadi ArrayBuffer / Encoder Bytes
+                const encoder = new TextEncoder();
+                const dataBuffer = encoder.encode(inputText);
+
+                // Memicu event pengiriman data ke perangkat Bluetooth
+                await bluetoothCharacteristic.writeValue(dataBuffer);
+                statusText.innerText = `Status: Berhasil mengirim "${inputText}"`;
+                
+            } catch (error) {
+                statusText.innerText = `Gagal mengirim: ${error.message}`;
+            }
         });
     </script>
 </body>
